@@ -1,0 +1,213 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligent Image Analyzer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; 
+        }
+        .main-container {
+            transition: all 0.3s ease-in-out;
+        }
+        .file-input-label { 
+            cursor: pointer; 
+            transition: all 0.2s ease-in-out;
+            border-color: #cbd5e1;
+        }
+        .file-input-label:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-color: #3b82f6;
+        }
+        .loader { 
+            border: 4px solid #e5e7eb; 
+            border-top: 4px solid #3b82f6; 
+            border-radius: 50%; 
+            width: 48px; 
+            height: 48px; 
+            animation: spin 1s linear infinite; 
+        }
+        @keyframes spin { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
+        .result-item {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body class="text-gray-800 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-3xl main-container">
+
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Intelligent Image Analyzer</h1>
+            <p class="text-gray-600 mt-3 text-lg">Upload an image to instantly identify its content using Google's Vision AI.</p>
+        </header>
+
+
+        <main class="bg-white rounded-2xl shadow-xl p-6 md:p-10">
+            <div id="upload-section">
+                <label for="imageUpload" class="file-input-label w-full flex flex-col items-center justify-center px-4 py-12 bg-gray-50 rounded-xl border-2 border-dashed">
+                    <svg class="w-12 h-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                    </svg>
+                    <span class="mt-4 text-lg font-medium text-gray-600">Drag & drop or click to select an image</span>
+                    <span class="mt-1 text-sm text-gray-500">PNG, JPG up to 10MB</span>
+                    <input type='file' class="hidden" id="imageUpload" accept="image/png, image/jpeg" />
+                </label>
+            </div>
+
+            <div id="preview-and-classify" class="hidden mt-6">
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+
+                    <div class="text-center">
+                        <img id="imagePreview" class="max-w-full max-h-80 mx-auto rounded-lg shadow-md border" src="#" alt="Image preview" />
+                    </div>
+
+                    <div class="text-center">
+                        <button id="classifyBtn" class="w-full bg-blue-600 text-white font-bold py-4 px-8 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 text-lg shadow-lg hover:shadow-blue-500/50">
+                            Analyze Image
+                        </button>
+                        <div id="loader" class="loader mx-auto mt-6 hidden"></div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div id="resultsContainer" class="mt-8">
+                <div id="errorMessage" class="text-red-600 bg-red-100 p-4 rounded-lg text-center font-semibold hidden"></div>
+                <div id="resultsContent"></div>
+            </div>
+        </main>
+    </div>
+
+
+    <footer class="text-center mt-10 text-gray-500">
+        <p>Made by Ayush Padhy & Shailesh Mishra</p>
+    </footer>
+
+    <script>
+
+        const CLOUD_FUNCTION_URL = "https://image-classifier-proxy-714163907581.asia-south1.run.app"; 
+
+
+        const imageUpload = document.getElementById('imageUpload');
+        const imagePreview = document.getElementById('imagePreview');
+        const uploadSection = document.getElementById('upload-section');
+        const previewAndClassify = document.getElementById('preview-and-classify');
+        const classifyBtn = document.getElementById('classifyBtn');
+        const resultsContent = document.getElementById('resultsContent');
+        const loader = document.getElementById('loader');
+        const errorMessage = document.getElementById('errorMessage');
+        let base64Image = null;
+
+        imageUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    uploadSection.classList.add('hidden');
+                    previewAndClassify.classList.remove('hidden');
+                    base64Image = e.target.result.split(',')[1];
+                    resultsContent.innerHTML = '';
+                    errorMessage.classList.add('hidden');
+                    classifyBtn.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        classifyBtn.addEventListener('click', classifyImage);
+
+        async function classifyImage() {
+            if (!base64Image) {
+                showError("Please select an image first.");
+                return;
+            }
+            if (CLOUD_FUNCTION_URL === "YOUR_CLOUD_FUNCTION_TRIGGER_URL_HERE") {
+                showError("Please configure your Cloud Function URL in the script.");
+                return;
+            }
+
+            loader.classList.remove('hidden');
+            classifyBtn.classList.add('hidden');
+            resultsContent.innerHTML = '';
+            errorMessage.classList.add('hidden');
+
+            try {
+                const response = await fetch(CLOUD_FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image_bytes: base64Image })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`API Error (${response.status}): ${errorText}`);
+                }
+
+                const data = await response.json();
+                displayResults(data);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError(`Failed to classify image. ${error.message}`);
+            } finally {
+                loader.classList.add('hidden');
+            }
+        }
+
+        function displayResults(predictions) {
+            if (predictions && predictions.length > 0) {
+                resultsContent.innerHTML = '<h2 class="text-3xl font-bold text-center mb-6 border-b pb-4">Analysis Results</h2>';
+                const resultsList = document.createElement('div');
+                resultsList.className = 'space-y-4';
+
+                predictions.forEach((label, index) => {
+                    const percentage = (label.score * 100);
+                    const listItem = document.createElement('div');
+                    listItem.className = 'result-item';
+                    listItem.style.animationDelay = `${index * 100}ms`;
+
+                    const itemContent = `
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-lg font-medium text-gray-700">${label.description}</span>
+                            <span class="text-sm font-semibold text-gray-500">${percentage.toFixed(1)}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="bg-blue-500 h-2.5 rounded-full" style="width: ${percentage}%"></div>
+                        </div>
+                    `;
+                    listItem.innerHTML = itemContent;
+                    resultsList.appendChild(listItem);
+                });
+                resultsContent.appendChild(resultsList);
+            } else {
+                resultsContent.innerHTML = '<p class="text-center text-gray-500 mt-4">Could not identify any specific objects in the image.</p>';
+            }
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('hidden');
+            classifyBtn.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

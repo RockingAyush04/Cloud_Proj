@@ -1,0 +1,57 @@
+//This is just the code, actual implementation in GCP console
+import base64
+import functions_framework
+from google.cloud import vision
+
+
+vision_client = vision.ImageAnnotatorClient()
+
+@functions_framework.http
+def classify_image_proxy(request):
+    """
+    An HTTP-triggered Cloud Function that acts as a secure proxy to the Vision AI API.
+    It receives a JSON payload from the web app, calls the Vision AI service,
+    and returns the classification results.
+
+    Args:
+        request (flask.Request): The request object.
+            <https://flask.palletsprojects.com/en/1.1.x/api/#incoming-request-data>
+
+    Returns:
+        A tuple containing the response text, status code, and headers.
+    """
+
+    headers = {
+        'Access-Control-Allow-Origin': '*'
+    }
+
+    if request.method == 'OPTIONS':
+        cors_headers = {
+            'Access-Control-Allow-Methods': 'POST',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Max-Age': '3600' # Cache preflight response for 1 hour
+        }
+        headers.update(cors_headers)
+        return ('', 204, headers)
+
+    request_json = request.get_json(silent=True)
+    if not request_json or 'image_bytes' not in request_json:
+        return ('Invalid request: JSON body with "image_bytes" key is required.', 400, headers)
+
+    try:
+
+        image_content = base64.b64decode(request_json['image_bytes'])
+
+        image = vision.Image(content=image_content)
+
+        response = vision_client.label_detection(image=image)
+        labels = response.label_annotations
+
+        results = [{'description': label.description, 'score': label.score} for label in labels]
+
+        return (results, 200, headers)
+
+    except Exception as e:
+
+        print(f"Error calling Vision AI: {e}")
+        return ('An error occurred while processing the image.', 500, headers)

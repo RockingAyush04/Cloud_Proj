@@ -188,7 +188,7 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    imagePreview.src = e.C.target.result;
+                    imagePreview.src = e.target.result;
                     imageElement = imagePreview; 
                     imagePreviewContainer.classList.remove('hidden');
                     base64Image = e.target.result.split(',')[1];
@@ -345,3 +345,4 @@
     </script>
 </body>
 </html>
+

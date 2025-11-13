@@ -3,19 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GCP AI INFERENCE</title>
-    
-    <!-- 1. Load Tailwind CSS (for styling) -->
+    <title>#Model 21- Ayush</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 2. Load Google Fonts (for aesthetics) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- 3. Load TensorFlow.js (The Client-Side AI Engine) -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-    <!-- 4. Load MobileNet (The Client-Side AI Model) -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@latest/dist/mobilenet.min.js"></script>
 
     <style>
@@ -23,7 +18,7 @@
             font-family: 'Inter', sans-serif;
             background-color: #f1f5f9; /* Tailwind gray-100 */
         }
-        /* Spinner animation for loading states */
+        /* Custom spinner for loading states */
         .loader {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #3b82f6; /* blue-500 */
@@ -36,7 +31,7 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* Style for the file upload area */
+        /* Style for the file input */
         .file-input-label {
             transition: all 0.2s ease-in-out;
         }
@@ -44,7 +39,7 @@
             background-color: #f9fafb; /* gray-50 */
             border-color: #3b82f6; /* blue-500 */
         }
-        /* Custom styles for the accuracy slider */
+        /* Custom styles for the range slider */
         input[type=range] {
             -webkit-appearance: none;
             width: 100%;
@@ -74,93 +69,58 @@
             border-radius: 50%;
             cursor: pointer;
         }
-        /* Style for the canvas where the image and boxes are drawn */
-        #previewCanvas {
-            max-width: 100%;
-            height: auto;
-            border-radius: 0.5rem; /* rounded-lg */
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); /* shadow-md */
-        }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4 md:p-8">
 
     <div class="w-full max-w-7xl mx-auto">
-        <!-- Header -->
         <header class="text-center mb-8">
             <h1 class="text-4xl md:text-5xl font-bold text-gray-900">AI Inference Comparator</h1>
             <p class="text-lg text-gray-600 mt-2">Server-Side (GCP) vs. Client-Side (On-Device)</p>
         </header>
 
-        <!-- Main Content Area -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
-            <!-- Column 1: Input & Preview -->
             <div class="bg-white p-6 rounded-2xl shadow-lg">
                 <h2 class="text-2xl font-semibold text-gray-800 mb-4">1. Upload an Image</h2>
                 
-                <!-- File Upload -->
                 <label for="imageUpload" class="file-input-label w-full flex flex-col items-center px-6 py-10 bg-white text-blue-600 rounded-lg shadow border-2 border-dashed border-gray-300 cursor-pointer">
                     <svg class="w-12 h-12" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4 4-4-4h3v-4h2v4z" /></svg>
                     <span class="mt-2 text-base font-medium">Select an image to analyze</span>
                     <input type='file' class="hidden" id="imageUpload" accept="image/png, image/jpeg" />
                 </label>
                 
-                <!-- Image Preview Canvas -->
                 <div id="imagePreviewContainer" class="mt-6 hidden">
                     <h3 class="text-xl font-semibold text-gray-800 mb-2">Preview</h3>
-                    <!-- We now use a canvas to draw the image and boxes -->
-                    <canvas id="previewCanvas"></canvas>
+                    <img id="imagePreview" class="w-full h-auto rounded-lg shadow-md" src="#" alt="Image preview" />
                 </div>
-                <!-- This is a hidden <img> tag used to load the image for both pipelines -->
-                <img id="imageSource" class="hidden" alt="Image source" />
 
-                <!-- Analyze Button -->
                 <button id="analyzeBtn" class="mt-6 w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                     Analyze Image
                 </button>
             </div>
 
-            <!-- Column 2: Results -->
             <div class="space-y-8">
                 
-                <!-- Result Box 1: Server-Side (GCP) -->
                 <div class="bg-white p-6 rounded-2xl shadow-lg">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-2xl font-semibold text-gray-800">Server-Side (GCP Vision API)</h2>
                         <div id="gcp-loader" class="loader hidden"></div>
                     </div>
 
-                    <!-- Accuracy Slider -->
                     <div class="mb-4">
-                        <label for="accuracySlider" class="block text-sm font-medium text-gray-700">Quality / Performance Trade-off</label>
+                        <label for="accuracySlider" class="block text-sm font-medium text-gray-700">Accuracy / Time Trade-off</label>
                         <input type="range" id="accuracySlider" min="1" max="10" value="10" class="w-full mt-2">
                         <div class="flex justify-between text-xs text-gray-500 mt-1">
-                            <span>Max Speed (Labels Only)</span>
-                            <span id="accuracyLabel" class="font-semibold text-blue-600">Max Quality (Labels + Objects)</span>
+                            <span>Max Speed (Fewer Results)</span>
+                            <span id="accuracyLabel" class="font-semibold text-blue-600">Max Quality (More Results)</span>
                         </div>
                     </div>
-
                     <div id="gcp-status" class="text-sm text-gray-500 mb-2">Ready.</div>
-                    
-                    <!-- Label Results -->
-                    <div id="gcp-results-container" class="mt-4 hidden">
-                         <h3 class="text-lg font-semibold text-gray-700 mb-2">Detected Labels</h3>
-                        <div id="gcp-results" class="space-y-2 text-sm">
-                            <!-- GCP labels will be injected here -->
+                    <div id="gcp-results" class="space-y-2 text-sm">
                         </div>
-                    </div>
-
-                    <!-- Object Results -->
-                    <div id="gcp-objects-container" class="mt-4 hidden">
-                         <h3 class="text-lg font-semibold text-gray-700 mb-2">Detected Objects (See Boxes)</h3>
-                        <div id="gcp-objects" class="space-y-2 text-sm">
-                            <!-- GCP objects will be injected here -->
-                        </div>
-                    </div>
                 </div>
 
-                <!-- Result Box 2: Client-Side (TensorFlow.js) -->
                 <div class="bg-white p-6 rounded-2xl shadow-lg">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-2xl font-semibold text-gray-800">Client-Side (TensorFlow.js)</h2>
@@ -168,14 +128,12 @@
                     </div>
                     <div id="local-status" class="text-sm text-gray-500 mb-2">Loading local AI model...</div>
                     <div id="local-results" class="space-y-2 text-sm">
-                        <!-- Local results will be injected here -->
-                    </div>
+                        </div>
                 </div>
                 
             </div>
         </div>
 
-        <!-- Footer -->
         <footer class="text-center mt-12 text-gray-500 text-sm">
             Made by Ayush Padhy & Shailesh Mishra
         </footer>
@@ -183,27 +141,21 @@
 
     <script>
         // --- CONFIGURATION ---
-        // This is your unique backend URL, already set.
         const CLOUD_FUNCTION_URL = "https://image-classifier-proxy-714163907581.asia-south1.run.app"; 
         // --- END CONFIGURATION ---
 
         // --- ELEMENT REFERENCES ---
         const imageUpload = document.getElementById('imageUpload');
-        const imageSource = document.getElementById('imageSource'); // Hidden img tag
-        const previewCanvas = document.getElementById('previewCanvas'); // Canvas element
-        const ctx = previewCanvas.getContext('2d'); // Canvas drawing context
+        const imagePreview = document.getElementById('imagePreview');
         const imagePreviewContainer = document.getElementById('imagePreviewContainer');
         const analyzeBtn = document.getElementById('analyzeBtn');
-        const accuracySlider = document.getElementById('accuracySlider');
-        const accuracyLabel = document.getElementById('accuracyLabel');
+        const accuracySlider = document.getElementById('accuracySlider'); // <-- NEW
+        const accuracyLabel = document.getElementById('accuracyLabel'); // <-- NEW
         
         // GCP Result Elements
         const gcpLoader = document.getElementById('gcp-loader');
         const gcpStatus = document.getElementById('gcp-status');
         const gcpResults = document.getElementById('gcp-results');
-        const gcpResultsContainer = document.getElementById('gcp-results-container');
-        const gcpObjects = document.getElementById('gcp-objects');
-        const gcpObjectsContainer = document.getElementById('gcp-objects-container');
 
         // Local Result Elements
         const localLoader = document.getElementById('local-loader');
@@ -213,117 +165,84 @@
         // --- GLOBAL STATE ---
         let localModel = null;
         let base64Image = null; // For GCP
+        let imageElement = null; // For TensorFlow.js
 
         // --- 1. LOAD THE LOCAL (CLIENT-SIDE) MODEL ---
-        // This runs once when the page loads. It downloads the 20-30MB model.
         async function loadLocalModel() {
             try {
                 const model = await mobilenet.load();
                 localModel = model;
                 localStatus.textContent = "Local model loaded. Ready.";
                 localLoader.classList.add('hidden');
+                console.log("MobileNet model loaded successfully.");
             } catch (err) {
                 console.error("Error loading local model:", err);
                 localStatus.textContent = "Error loading local model.";
             }
         }
-        loadLocalModel(); // Start loading the model immediately
+        loadLocalModel();
 
-        // --- 2. HANDLE FILE UPLOAD (UPDATED FOR CANVAS) ---
-        // This runs when the user selects a file.
+        // --- 2. HANDLE FILE UPLOAD ---
         imageUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    // Load the image into the hidden <img> tag first
-                    imageSource.src = e.target.result;
-                    // Save the base64 string (without the "data:..." prefix) for the backend
+                    imagePreview.src = e.target.result;
+                    imageElement = imagePreview; 
+                    imagePreviewContainer.classList.remove('hidden');
                     base64Image = e.target.result.split(',')[1];
-                    
-                    // When the <img> tag has finished loading the image...
-                    imageSource.onload = () => {
-                        // ...draw that image onto the canvas
-                        drawImageOnCanvas(imageSource);
-                        imagePreviewContainer.classList.remove('hidden');
-                        analyzeBtn.disabled = false; // Enable the "Analyze" button
-                    }
-
-                    // Clear all results from the previous run
+                    analyzeBtn.disabled = false;
                     gcpResults.innerHTML = '';
                     localResults.innerHTML = '';
-                    gcpObjects.innerHTML = '';
-                    gcpResultsContainer.classList.add('hidden');
-                    gcpObjectsContainer.classList.add('hidden');
                     gcpStatus.textContent = 'Ready.';
                     localStatus.textContent = 'Local model is ready.';
                 };
-                // This starts the file reading process
                 reader.readAsDataURL(file);
             }
         });
 
-        // --- NEW: Function to draw the image on the canvas ---
-        function drawImageOnCanvas(imgElement) {
-            // Set canvas size to match the image's natural size
-            previewCanvas.width = imgElement.naturalWidth;
-            previewCanvas.height = imgElement.naturalHeight;
-            // Draw the image at position (0, 0)
-            ctx.drawImage(imgElement, 0, 0, previewCanvas.width, previewCanvas.height);
-        }
-
-        // --- 3. Update slider label text ---
+        // --- NEW: Update slider label ---
         accuracySlider.addEventListener('input', (e) => {
             const value = e.target.value;
-            // The backend logic is: > 7 means objects, <= 7 means no objects
-            if (value <= 7) {
-                accuracyLabel.textContent = "Max Speed (Labels Only)";
+            if (value < 4) {
+                accuracyLabel.textContent = "Max Speed";
+            } else if (value < 8) {
+                accuracyLabel.textContent = "Balanced";
             } else {
-                accuracyLabel.textContent = "Max Quality (Labels + Objects)";
+                accuracyLabel.textContent = "Max Quality";
             }
         });
 
-        // --- 4. MAIN ANALYSIS ORCHESTRATOR ---
-        // This runs when the user clicks the "Analyze Image" button
+        // --- 3. MAIN ANALYSIS ORCHESTRATOR ---
         analyzeBtn.addEventListener('click', () => {
-            if (!imageSource.src || !base64Image || !localModel) {
+            if (!imageElement || !base64Image || !localModel) {
                 alert("Please select an image and wait for the local model to load.");
                 return;
             }
-            
-            // Re-draw the original image on the canvas to clear old boxes
-            drawImageOnCanvas(imageSource);
-
-            // Disable button, show spinners, set status text
             analyzeBtn.disabled = true;
             gcpLoader.classList.remove('hidden');
             localLoader.classList.remove('hidden');
-            gcpStatus.textContent = 'Analyzing with GCP AI Pipeline...';
+            gcpStatus.textContent = 'Analyzing with GCP...';
             localStatus.textContent = 'Analyzing on-device...';
 
-            // Clear previous results
-            gcpResults.innerHTML = '';
-            localResults.innerHTML = '';
-            gcpObjects.innerHTML = '';
-            gcpResultsContainer.classList.add('hidden');
-            gcpObjectsContainer.classList.add('hidden');
-
-            // --- Run both analysis pipelines at the same time ---
+            // Run both analyses
             runGCPSideAnalysis();
             runLocalSideAnalysis();
         });
 
-        // --- 5. PIPELINE A: GCP (SERVER-SIDE) ANALYSIS ---
+        // --- 4. PIPELINE A: GCP (SERVER-SIDE) ANALYSIS ---
         async function runGCPSideAnalysis() {
             const startTime = performance.now();
-            const accuracyLevel = accuracySlider.value; // Get value from slider
+            
+            // --- NEW: Get the accuracy level from the slider ---
+            const accuracyLevel = accuracySlider.value;
             
             try {
-                // Call our Cloud Run function
                 const response = await fetch(CLOUD_FUNCTION_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // Send the image and the slider value
+                    // --- NEW: Send the accuracy level in the body ---
                     body: JSON.stringify({ 
                         image_bytes: base64Image,
                         accuracy: accuracyLevel 
@@ -335,138 +254,68 @@
                     throw new Error(`API Error (${response.status}): ${errorText}`);
                 }
 
-                // This 'data' is now an OBJECT: { labels: [...], objects: [...] }
-                const data = await response.json(); 
+                const predictions = await response.json();
                 const endTime = performance.now();
                 const duration = (endTime - startTime).toFixed(0);
                 
-                // Pass the whole object to the display function
-                displayGCPResults(data, duration); 
+                displayGCPResults(predictions, duration);
 
             } catch (error) {
                 console.error('GCP Error:', error);
                 gcpStatus.textContent = `Error: ${error.message}`;
             } finally {
                 gcpLoader.classList.add('hidden');
-                analyzeBtn.disabled = false; // Re-enable button
+                analyzeBtn.disabled = false;
             }
         }
 
-        // --- 6. PIPELINE B: LOCAL (CLIENT-SIDE) ANALYSIS ---
+        // --- 5. PIPELINE B: LOCAL (CLIENT-SIDE) ANALYSIS ---
+        // (This function remains unchanged)
         async function runLocalSideAnalysis() {
             const startTime = performance.now();
             try {
-                // Use the hidden <img> tag as the source for TF.js
-                // This 'predictions' variable IS an array
-                const predictions = await localModel.classify(imageSource);
+                const predictions = await localModel.classify(imageElement);
                 const endTime = performance.now();
                 const duration = (endTime - startTime).toFixed(0);
-                
-                // Pass the array to the display function
                 displayLocalResults(predictions, duration);
             } catch (error) {
                 console.error('Local Model Error:', error);
                 localStatus.textContent = `Error: ${error.message}`;
             } finally {
                 localLoader.classList.add('hidden');
-                analyzeBtn.disabled = false; // Re-enable button
+                analyzeBtn.disabled = false;
             }
         }
 
-        // --- 7. DISPLAY RESULTS (HEAVILY UPDATED) ---
-        
-        // This function now expects an OBJECT: data = { labels: [...], objects: [...] }
-        function displayGCPResults(data, duration) {
-            gcpStatus.textContent = `Analysis complete in ${duration} ms (Simulated full-stack workload)`;
-            
-            const labels = data.labels;
-            const objects = data.objects;
-
-            // --- Display Labels ---
+        // --- 6. DISPLAY RESULTS ---
+        // (This function remains unchanged)
+        function displayGCPResults(predictions, duration) {
+            gcpStatus.textContent = `Analysis complete in ${duration} ms (includes network latency & simulated workload)`;
             gcpResults.innerHTML = ''; 
-            if (labels.length === 0) {
-                gcpResults.innerHTML = '<p class="text-gray-500">No labels found for this quality setting.</p>';
-            } else {
-                // We call .forEach() on 'labels' (data.labels), which IS an array.
-                labels.forEach(label => {
-                    const score = (label.score * 100).toFixed(1);
-                    const barHtml = `
-                        <div class="w-full">
-                            <div class="flex justify-between mb-1">
-                                <span class="font-medium text-blue-700">${label.description}</span>
-                                <span class="text-gray-600">${score}%</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${score}%"></div>
-                            </div>
-                        </div>
-                    `;
-                    gcpResults.innerHTML += barHtml;
-                });
-            }
-            gcpResultsContainer.classList.remove('hidden'); // Show the labels container
-
-            // --- Display Objects and Draw Boxes ---
-            gcpObjects.innerHTML = '';
-            // Only run if the backend sent us objects
-            if (objects.length > 0) {
-                objects.forEach((obj, index) => {
-                    const score = (obj.score * 100).toFixed(1);
-                    const color = getColor(index); // Get a unique color for each box
-
-                    // Add text to the results list
-                    const objectHtml = `
-                        <div class="flex items-center">
-                            <div class="w-4 h-4 rounded-full mr-2" style="background-color: ${color}"></div>
-                            <span class="font-medium" style="color: ${color}">${obj.name}</span>
-                            <span class="text-gray-600 ml-auto">${score}%</span>
-                        </div>
-                    `;
-                    gcpObjects.innerHTML += objectHtml;
-
-                    // Draw the box on the canvas
-                    drawBoundingBox(obj, color);
-                });
-                gcpObjectsContainer.classList.remove('hidden'); // Show the objects container
-            }
-        }
-        
-        // --- NEW: Helper function to draw a bounding box on the canvas ---
-        function drawBoundingBox(obj, color) {
-            const canvasWidth = previewCanvas.width;
-            const canvasHeight = previewCanvas.height;
-
-            // The API gives normalized vertices (0.0 to 1.0)
-            // We need to convert them to pixel coordinates
-            const x1 = obj.bounds[0].x * canvasWidth;
-            const y1 = obj.bounds[0].y * canvasHeight;
-            const x2 = obj.bounds[1].x * canvasWidth;
-            const y2 = obj.bounds[1].y * canvasHeight;
             
-            const width = x2 - x1;
-            const height = y2 - y1;
+            if (predictions.length === 0) {
+                gcpResults.innerHTML = '<p class="text-gray-500">No labels found.</p>';
+                return;
+            }
 
-            // Draw the box
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.rect(x1, y1, width, height);
-            ctx.stroke();
-
-            // Draw label text
-            ctx.fillStyle = color;
-            ctx.font = '16px Inter';
-            // Draw text above the box, but if it's at the top, draw it below
-            ctx.fillText(obj.name, x1, y1 > 10 ? y1 - 5 : y1 + height + 15);
+            predictions.forEach(label => {
+                const score = (label.score * 100).toFixed(1);
+                const barHtml = `
+                    <div class="w-full">
+                        <div class="flex justify-between mb-1">
+                            <span class="font-medium text-blue-700">${label.description}</span>
+                            <span class="text-gray-600">${score}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${score}%"></div>
+                        </div>
+                    </div>
+                `;
+                gcpResults.innerHTML += barHtml;
+            });
         }
 
-        // --- NEW: Helper function to get unique colors for boxes ---
-        const COLORS = ['#3b82f6', '#10b981', '#ef4444', '#f97316', '#a855f7', '#ec4899'];
-        function getColor(index) {
-            return COLORS[index % COLORS.length];
-        }
-
-        // This function expects an ARRAY
+        // (This function remains unchanged)
         function displayLocalResults(predictions, duration) {
             localStatus.textContent = `Analysis complete in ${duration} ms (local inference only)`;
             localResults.innerHTML = ''; 
@@ -476,7 +325,6 @@
                 return;
             }
             
-            // This 'predictions' IS an array, so .forEach() is correct.
             predictions.forEach(label => {
                 const score = (label.probability * 100).toFixed(1);
                 const barHtml = `
@@ -486,15 +334,14 @@
                             <span class="text-gray-600">${score}%</span>
                         </div>
                         <div class="w-full bg-gray-200 rounded-full h-2.5">
-                        <div class="bg-green-600 h-2.5 rounded-full" style="width: ${score}%"></div>
+                            <div class="bg-green-600 h-2.5 rounded-full" style="width: ${score}%"></div>
                         </div>
                     </div>
                 `;
-                localResults.innerHTML += barHtm;
+                localResults.innerHTML += barHtml;
             });
         }
 
     </script>
 </body>
 </html>
-

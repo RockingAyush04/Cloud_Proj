@@ -4,15 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Inference Comparator</title>
-    <!-- 1. Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 2. Load Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- 3. Load TensorFlow.js (The Client-Side AI) -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@latest/dist/mobilenet.min.js"></script>
 
@@ -42,59 +39,88 @@
             background-color: #f9fafb; /* gray-50 */
             border-color: #3b82f6; /* blue-500 */
         }
+        /* Custom styles for the range slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #d1d5db; /* gray-300 */
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .2s;
+        }
+        input[type=range]:hover {
+            opacity: 1;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #3b82f6; /* blue-500 */
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        input[type=range]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #3b82f6; /* blue-500 */
+            border-radius: 50%;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4 md:p-8">
 
     <div class="w-full max-w-7xl mx-auto">
-        <!-- Header -->
         <header class="text-center mb-8">
             <h1 class="text-4xl md:text-5xl font-bold text-gray-900">AI Inference Comparator</h1>
             <p class="text-lg text-gray-600 mt-2">Server-Side (GCP) vs. Client-Side (On-Device)</p>
         </header>
 
-        <!-- Main Content Area -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
-            <!-- Column 1: Input & Preview -->
             <div class="bg-white p-6 rounded-2xl shadow-lg">
                 <h2 class="text-2xl font-semibold text-gray-800 mb-4">1. Upload an Image</h2>
                 
-                <!-- File Upload -->
                 <label for="imageUpload" class="file-input-label w-full flex flex-col items-center px-6 py-10 bg-white text-blue-600 rounded-lg shadow border-2 border-dashed border-gray-300 cursor-pointer">
                     <svg class="w-12 h-12" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4 4-4-4h3v-4h2v4z" /></svg>
                     <span class="mt-2 text-base font-medium">Select an image to analyze</span>
                     <input type='file' class="hidden" id="imageUpload" accept="image/png, image/jpeg" />
                 </label>
                 
-                <!-- Image Preview -->
                 <div id="imagePreviewContainer" class="mt-6 hidden">
                     <h3 class="text-xl font-semibold text-gray-800 mb-2">Preview</h3>
                     <img id="imagePreview" class="w-full h-auto rounded-lg shadow-md" src="#" alt="Image preview" />
                 </div>
 
-                <!-- Analyze Button -->
                 <button id="analyzeBtn" class="mt-6 w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                     Analyze Image
                 </button>
             </div>
 
-            <!-- Column 2: Results -->
             <div class="space-y-8">
                 
-                <!-- Result Box 1: Server-Side (GCP) -->
                 <div class="bg-white p-6 rounded-2xl shadow-lg">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-2xl font-semibold text-gray-800">Server-Side (GCP Vision API)</h2>
                         <div id="gcp-loader" class="loader hidden"></div>
                     </div>
+
+                    <div class="mb-4">
+                        <label for="accuracySlider" class="block text-sm font-medium text-gray-700">Accuracy / Time Trade-off</label>
+                        <input type="range" id="accuracySlider" min="1" max="10" value="10" class="w-full mt-2">
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>Max Speed (Fewer Results)</span>
+                            <span id="accuracyLabel" class="font-semibold text-blue-600">Max Quality (More Results)</span>
+                        </div>
+                    </div>
                     <div id="gcp-status" class="text-sm text-gray-500 mb-2">Ready.</div>
                     <div id="gcp-results" class="space-y-2 text-sm">
-                        <!-- GCP results will be injected here -->
-                    </div>
+                        </div>
                 </div>
 
-                <!-- Result Box 2: Client-Side (TensorFlow.js) -->
                 <div class="bg-white p-6 rounded-2xl shadow-lg">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-2xl font-semibold text-gray-800">Client-Side (TensorFlow.js)</h2>
@@ -102,14 +128,12 @@
                     </div>
                     <div id="local-status" class="text-sm text-gray-500 mb-2">Loading local AI model...</div>
                     <div id="local-results" class="space-y-2 text-sm">
-                        <!-- Local results will be injected here -->
-                    </div>
+                        </div>
                 </div>
                 
             </div>
         </div>
 
-        <!-- Footer -->
         <footer class="text-center mt-12 text-gray-500 text-sm">
             Made by Ayush Padhy & Shailesh Mishra
         </footer>
@@ -117,7 +141,6 @@
 
     <script>
         // --- CONFIGURATION ---
-        // This is your live, pre-configured Cloud Function URL
         const CLOUD_FUNCTION_URL = "https://image-classifier-proxy-714163907581.asia-south1.run.app"; 
         // --- END CONFIGURATION ---
 
@@ -126,6 +149,8 @@
         const imagePreview = document.getElementById('imagePreview');
         const imagePreviewContainer = document.getElementById('imagePreviewContainer');
         const analyzeBtn = document.getElementById('analyzeBtn');
+        const accuracySlider = document.getElementById('accuracySlider'); // <-- NEW
+        const accuracyLabel = document.getElementById('accuracyLabel'); // <-- NEW
         
         // GCP Result Elements
         const gcpLoader = document.getElementById('gcp-loader');
@@ -155,7 +180,6 @@
                 localStatus.textContent = "Error loading local model.";
             }
         }
-        // Load the model as soon as the page opens
         loadLocalModel();
 
         // --- 2. HANDLE FILE UPLOAD ---
@@ -164,18 +188,11 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    // For image preview
-                    imagePreview.src = e.target.result;
-                    imageElement = imagePreview; // Pass the <img> element to TF.js
+                    imagePreview.src = e.C.target.result;
+                    imageElement = imagePreview; 
                     imagePreviewContainer.classList.remove('hidden');
-                    
-                    // For GCP pipeline (Base64 string)
                     base64Image = e.target.result.split(',')[1];
-                    
-                    // Enable the button
                     analyzeBtn.disabled = false;
-                    
-                    // Clear old results
                     gcpResults.innerHTML = '';
                     localResults.innerHTML = '';
                     gcpStatus.textContent = 'Ready.';
@@ -185,21 +202,31 @@
             }
         });
 
+        // --- NEW: Update slider label ---
+        accuracySlider.addEventListener('input', (e) => {
+            const value = e.target.value;
+            if (value < 4) {
+                accuracyLabel.textContent = "Max Speed";
+            } else if (value < 8) {
+                accuracyLabel.textContent = "Balanced";
+            } else {
+                accuracyLabel.textContent = "Max Quality";
+            }
+        });
+
         // --- 3. MAIN ANALYSIS ORCHESTRATOR ---
         analyzeBtn.addEventListener('click', () => {
             if (!imageElement || !base64Image || !localModel) {
                 alert("Please select an image and wait for the local model to load.");
                 return;
             }
-
-            // Disable button and show loaders
             analyzeBtn.disabled = true;
             gcpLoader.classList.remove('hidden');
             localLoader.classList.remove('hidden');
             gcpStatus.textContent = 'Analyzing with GCP...';
             localStatus.textContent = 'Analyzing on-device...';
 
-            // Run both analyses in parallel
+            // Run both analyses
             runGCPSideAnalysis();
             runLocalSideAnalysis();
         });
@@ -207,11 +234,19 @@
         // --- 4. PIPELINE A: GCP (SERVER-SIDE) ANALYSIS ---
         async function runGCPSideAnalysis() {
             const startTime = performance.now();
+            
+            // --- NEW: Get the accuracy level from the slider ---
+            const accuracyLevel = accuracySlider.value;
+            
             try {
                 const response = await fetch(CLOUD_FUNCTION_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image_bytes: base64Image })
+                    // --- NEW: Send the accuracy level in the body ---
+                    body: JSON.stringify({ 
+                        image_bytes: base64Image,
+                        accuracy: accuracyLevel 
+                    })
                 });
 
                 if (!response.ok) {
@@ -230,34 +265,33 @@
                 gcpStatus.textContent = `Error: ${error.message}`;
             } finally {
                 gcpLoader.classList.add('hidden');
-                analyzeBtn.disabled = false; // Re-enable button
+                analyzeBtn.disabled = false;
             }
         }
 
         // --- 5. PIPELINE B: LOCAL (CLIENT-SIDE) ANALYSIS ---
+        // (This function remains unchanged)
         async function runLocalSideAnalysis() {
             const startTime = performance.now();
             try {
-                // Classify the image from the <img> element
                 const predictions = await localModel.classify(imageElement);
                 const endTime = performance.now();
                 const duration = (endTime - startTime).toFixed(0);
-
                 displayLocalResults(predictions, duration);
-
             } catch (error) {
                 console.error('Local Model Error:', error);
                 localStatus.textContent = `Error: ${error.message}`;
             } finally {
                 localLoader.classList.add('hidden');
-                analyzeBtn.disabled = false; // Re-enable button
+                analyzeBtn.disabled = false;
             }
         }
 
         // --- 6. DISPLAY RESULTS ---
+        // (This function remains unchanged)
         function displayGCPResults(predictions, duration) {
-            gcpStatus.textContent = `Analysis complete in ${duration} ms (includes network latency)`;
-            gcpResults.innerHTML = ''; // Clear previous results
+            gcpStatus.textContent = `Analysis complete in ${duration} ms (includes network latency & simulated workload)`;
+            gcpResults.innerHTML = ''; 
             
             if (predictions.length === 0) {
                 gcpResults.innerHTML = '<p class="text-gray-500">No labels found.</p>';
@@ -281,18 +315,17 @@
             });
         }
 
+        // (This function remains unchanged)
         function displayLocalResults(predictions, duration) {
             localStatus.textContent = `Analysis complete in ${duration} ms (local inference only)`;
-            localResults.innerHTML = ''; // Clear previous results
+            localResults.innerHTML = ''; 
 
             if (predictions.length === 0) {
                 localResults.innerHTML = '<p class="text-gray-500">No labels found.</p>';
                 return;
             }
-
-            // TensorFlow.js gives 3 results by default
+            
             predictions.forEach(label => {
-                // TF.js uses 'className' and 'probability'
                 const score = (label.probability * 100).toFixed(1);
                 const barHtml = `
                     <div class="w-full">
